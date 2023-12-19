@@ -1,4 +1,5 @@
-# qtelnet
+<h1 align="center"> qtelnet </h1>
+<h6 align="center"> Your telnet in the future </h6>
 
 ## Introduction
 
