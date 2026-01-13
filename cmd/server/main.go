@@ -20,7 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	fmt.Println("QUIC echo server listening on :8080")
 
@@ -50,7 +50,7 @@ func handleConnection(conn *quic.Conn) {
 }
 
 func handleStream(conn *quic.Conn, stream *quic.Stream) {
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	data, err := io.ReadAll(stream)
 	if err != nil {
@@ -66,10 +66,12 @@ func handleStream(conn *quic.Conn, stream *quic.Stream) {
 		log.Printf("open stream error: %v", err)
 		return
 	}
-	defer respStream.Close()
+	defer func() { _ = respStream.Close() }()
 
 	response := fmt.Sprintf("Echo: %s", string(data))
-	respStream.Write([]byte(response))
+	if _, err := respStream.Write([]byte(response)); err != nil {
+		log.Printf("write error: %v", err)
+	}
 }
 
 // generateTLSConfig creates a self-signed certificate for testing
