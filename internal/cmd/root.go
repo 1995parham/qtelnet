@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,13 +14,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func main(host, port string, insecure bool) {
+func main(host, port string, insecure bool, alpn string) {
 	addr := fmt.Sprintf("%s:%s", host, port)
 
 	// nolint: exhaustruct, gosec
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: insecure,
-		NextProtos:         []string{"quic-echo"},
+		NextProtos:         []string{alpn},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -56,7 +55,8 @@ const (
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	insecure := flag.Bool("K", true, "skip verify certificates")
+	var insecure bool
+	var alpn string
 
 	// nolint: exhaustruct
 	root := &cobra.Command{
@@ -65,9 +65,12 @@ func Execute() {
 		Example: "qtelnet 127.0.0.1 8080",
 		Args:    cobra.ExactArgs(NArgs),
 		Run: func(cmd *cobra.Command, args []string) {
-			main(args[0], args[1], *insecure)
+			main(args[0], args[1], insecure, alpn)
 		},
 	}
+
+	root.Flags().BoolVarP(&insecure, "insecure", "K", true, "skip certificate verification")
+	root.Flags().StringVarP(&alpn, "alpn", "a", "quic-echo", "ALPN protocol to use")
 
 	if err := root.Execute(); err != nil {
 		os.Exit(ExitFailure)
