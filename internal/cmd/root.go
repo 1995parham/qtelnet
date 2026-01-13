@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/1995parham/qtelnet/internal/handler"
-	"github.com/lucas-clemente/quic-go"
+	"github.com/quic-go/quic-go"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
@@ -21,19 +21,28 @@ func main(host, port string, insecure bool) {
 	// nolint: exhaustruct, gosec
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: insecure,
+		NextProtos:         []string{"quic-echo"},
 	}
 
-	conn, err := quic.DialAddr(addr, tlsConf, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	conn, err := quic.DialAddr(ctx, addr, tlsConf, nil)
 	if err != nil {
 		pterm.Fatal.Printf("cannot dial to server %s\n", err)
 	}
 	pterm.Success.Printf("connected\n")
+	defer cancel()
 
-	go handler.Accepter(context.Background(), conn)
+	go handler.Accepter(ctx, conn)
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+		cancel()
+	}()
+
+	handler.Prompt(ctx, conn)
 }
 
 const (

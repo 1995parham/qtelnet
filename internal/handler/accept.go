@@ -6,14 +6,14 @@ import (
 	"io"
 	"os"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/quic-go/quic-go"
 	"github.com/pterm/pterm"
 )
 
 // Accepter accept input streams and then print
 // their data with their id. please note that this function is a blocking function
 // and should run it in a goroutine.
-func Accepter(ctx context.Context, conn quic.Connection) {
+func Accepter(ctx context.Context, conn *quic.Conn) {
 	for {
 		stream, err := conn.AcceptStream(ctx)
 		if err != nil {
